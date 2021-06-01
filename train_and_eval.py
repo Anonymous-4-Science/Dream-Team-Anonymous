@@ -83,7 +83,7 @@ def define_model(in_shape=(268,1), out_shape=5, initial_bias=None):
     AnonLeNet.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy','Recall', tfa.metrics.F1Score(num_classes=5, threshold=0.5, average='macro')])
     return AnonLeNet
 
-mat_contents = sio.loadmat('./CV_s/CV1/CV1.mat')
+mat_contents = sio.loadmat('./CV_1/CV1.mat')
 CV = mat_contents['CV1']
 val = CV[0, 0]
 xtrain = val['xtrain']
@@ -133,7 +133,7 @@ for ir in range(10):
     monitor='val_f1_score', factor=0.1, patience=75, verbose=1,
     mode='max', min_delta=0.001, cooldown=0, min_lr=0)
         
-    history = model.fit(xtrain, trainY1, epochs=500, batch_size=250, verbose=0,
+    history = model.fit(xtrain, trainY1, epochs=1, batch_size=500, verbose=0,
                         validation_data=(valX, valY1), callbacks=[stop_me, model_checkpoint_callback,where_am_I])
     
     hist_df = pd.DataFrame(history.history)
