@@ -16,6 +16,15 @@ import tensorflow as tf
 import scipy.io as sio
 from sklearn.model_selection import train_test_split
 
+# Uncomment for the error: No algorithm worked!
+'''
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+'''
+
 
 def label_encoding(labels):
 	encoded_labels = np.empty((len(labels),5),dtype=int)
@@ -38,15 +47,6 @@ def inception_module_1(layer_in):
     conv16 = Conv1D(16, 16, padding='same', activation='relu', kernel_initializer='GlorotNormal',kernel_regularizer=l2(0.0002))(layer_in)
     layer_out = concatenate([conv1, conv4, conv16], axis=-1)
     return layer_out
-    
-def res_net_block1(input_data, filters, conv_size):
-    x = Conv1D(filters, conv_size, activation='relu', padding='same', kernel_regularizer=l2(0.0002))(input_data)
-    x = BatchNormalization()(x)
-    x = Conv1D(filters, conv_size, activation=None, padding='same', kernel_regularizer=l2(0.0002))(x)
-    x = BatchNormalization()(x)
-    x = Add()([x, input_data])
-    x = Activation('relu')(x)
-    return x
 
 def res_net_block_trans(input_data, filters, conv_size):
     input_trans = Conv1D(filters, 1, activation='relu', padding='same', kernel_regularizer=l2(0.0002))(input_data)
@@ -95,10 +95,11 @@ ytest = val['ytest']
 xtrain = xtrain[:, 3:271]
 xval = xval[:, 3:271]
 xtest = xtest[:, 3:271]
+# Concatenate the training and validation for random splitting
 xtrain = np.concatenate((xtrain, xval), axis=0)
 ytrain = np.concatenate((ytrain, yval), axis=0)
 
-
+# Loop for random seed experiments
 for ir in range(10):
     ir1 = np.random.randint(1,100)
     
@@ -135,16 +136,15 @@ for ir in range(10):
         
     history = model.fit(xtrain, trainY1, epochs=1, batch_size=500, verbose=0,
                         validation_data=(valX, valY1), callbacks=[stop_me, model_checkpoint_callback,where_am_I])
-    
-    hist_df = pd.DataFrame(history.history)
-    pd.DataFrame.from_dict(history.history).to_csv('doubleIncep-250-Lr.csv', index=False)
-    
+
+    # Testing the trained model
     model= tf.keras.models.load_model(checkpoint_filepath, custom_objects={"F1Score": tfa.metrics.F1Score})
 
     xtrain = np.reshape(xtrain, (len(xtrain), 268, 1))
     xtest = np.reshape(xtest, (len(xtest), 268, 1))
     xval = np.reshape(xval, (len(xval), 268, 1))
-    
+
+    # Concatenate all data for confusion matrix and metrics
     all_data = np.concatenate((xtrain, xtest, xval))
     all_labels = np.concatenate((ytrain, ytest, yval))
     
@@ -164,9 +164,9 @@ for ir in range(10):
     print('Kappa = ', result.numpy())
     print('F1 scores =', result1.numpy())
     print('CV= ', 1)
-    print('ir1=', ir1)
+    print('ir1=', ir1) # Random seed number for error and standard deviation calculation
 
-    model.save('saved_model/my_model')
+    model.save('saved_model/my_model') # Save the model
     
     print('exit')
 
